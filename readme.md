@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/monadrank.jpg" alt="Monad Rank Logo" width="120"/>
+  <img src="monadrank.jpg" alt="Monad Rank Logo" width="120"/>
 </p>
 
 <h1 align="center">Monad Rank 🪩</h1>
@@ -21,7 +21,7 @@ Bizlere destek veren tüm topluluk üyelerine ve iş ortaklarımıza teşekkür 
 ## 🎯 Amacımız
 
 <p align="center">
-  <img src="assets/monadranklogo.png" alt="Monad Rank Amaç" width="700"/>
+  <img src="monadranklogo.png" alt="Monad Rank Amaç" width="700"/>
 </p>
 
 **Hangi Problemi Çözüyoruz:**
