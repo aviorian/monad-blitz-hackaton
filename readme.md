@@ -4,10 +4,6 @@
 
 <h1 align="center">Monad Rank 🪩</h1>
 
-<## 🧡 Teşekkürler
-
-Bizlere destek veren tüm topluluk üyelerine ve iş ortaklarımıza teşekkür ederiz.
-
 <p align="center">
   <b>Monad Rank x Işık Blockchain</b><br/>
   <i>"Katkıyı on-chain hale getiriyoruz."</i>
