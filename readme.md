@@ -134,3 +134,4 @@ npx hardhat run scripts/deploy.js --network monad-testnet
 </p>
 ```
 
+Sunum Linki: https://www.canva.com/design/DAG00wpe1F0/fayW7M7hBM0PNRrVHQdOsw/edit?utm_content=DAG00wpe1F0&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton 
