@@ -22,10 +22,10 @@
       "entertainment",
       "finance"
     ],
-    "heroImageUrl": "https://monad-blitz-hackaton.vercel.app/public/assets/monad-logo.png",
+    "heroImageUrl": "",
     "tagline": "Top Monad creators",
     "ogTitle": "Rewards",
     "ogDescription": "Climb the leaderboard and earn rewards by being active on Monad.",
-    "ogImageUrl": "https://monad-blitz-hackaton.vercel.app/public/assets/monadrank.png"
+    "ogImageUrl": ""
   }
 }
