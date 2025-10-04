@@ -76,8 +76,9 @@ const SEARCH_TERMS = [
   "monad nft",
 ] as const;
 const BLOCKED_FIDS = new Set<number>([282172, 1114650]);
+const PAGE_SIZE = 50;
 
-type MindshareStat = AuthorInteractionStats & { mindshare: number };
+type MindshareStat = AuthorInteractionStats & { mindshare: number; rank: number };
 type ProfileState = {
   isLoading: boolean;
   fid?: number;
@@ -123,11 +124,14 @@ export function MonadAuthorStats() {
   const [selectedUsers, setSelectedUsers] = useState<NeynarUser[]>([]);
   const [selectedCustodyAddresses, setSelectedCustodyAddresses] = useState<string[]>([]);
   const [profileState, setProfileState] = useState<ProfileState>({ isLoading: false });
+  const [searchTerm, setSearchTerm] = useState("");
   const [isCustomAmountOpen, setIsCustomAmountOpen] = useState(false);
   const [customAmountInput, setCustomAmountInput] = useState("");
   const [customAmountError, setCustomAmountError] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>(undefined);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
 
   const { isConnected, chainId } = useAccount();
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
@@ -210,6 +214,7 @@ export function MonadAuthorStats() {
 
       if (failedTerms.length === SEARCH_TERMS.length) {
         setStats([]);
+        setCurrentPage(0);
         setLoadingState({ isLoading: false, error: "Unable to load data. Please try again." });
         return;
       }
@@ -222,6 +227,7 @@ export function MonadAuthorStats() {
 
       if (filteredAggregated.length === 0) {
         setStats([]);
+        setCurrentPage(0);
         setLoadingState({ isLoading: false });
         return;
       }
@@ -229,6 +235,7 @@ export function MonadAuthorStats() {
       const uniqueCasts = Array.from(new Map(filteredAggregated.map((cast) => [cast.hash, cast])).values());
 
       setStats(aggregateAuthorStats(uniqueCasts));
+      setCurrentPage(0);
       setLastUpdated(new Date());
       setLoadingState({ isLoading: false });
     } catch (error) {
@@ -238,6 +245,7 @@ export function MonadAuthorStats() {
 
       const message = error instanceof Error ? error.message : "Unexpected error";
       setStats([]);
+      setCurrentPage(0);
       setLoadingState({ isLoading: false, error: message });
     }
   }, []);
@@ -267,12 +275,34 @@ export function MonadAuthorStats() {
         ...author,
         mindshare: author.totalPoints / total,
       }))
-      .sort((a, b) => b.mindshare - a.mindshare);
+      .sort((a, b) => b.mindshare - a.mindshare)
+      .map((author, index) => ({
+        ...author,
+        rank: index + 1,
+      }));
 
     return { mindshareStats: decorated, totalPoints: total };
   }, [stats]);
 
+  const filteredMindshareStats = useMemo(() => {
+    const normalized = searchTerm.trim().toLowerCase();
+
+    if (normalized.length === 0) {
+      return mindshareStats;
+    }
+
+    return mindshareStats.filter((author) => {
+      const username = author.username?.toLowerCase() ?? "";
+      const displayName = author.displayName?.toLowerCase() ?? "";
+      const fid = author.fid.toString();
+
+      return username.includes(normalized) || displayName.includes(normalized) || fid.includes(normalized);
+    });
+  }, [mindshareStats, searchTerm]);
+
   const hasResults = mindshareStats.length > 0;
+  const hasFilteredResults = filteredMindshareStats.length > 0;
+  const totalPages = Math.ceil(filteredMindshareStats.length / PAGE_SIZE);
 
   const subtitle = useMemo(() => {
     if (loadingState.isLoading) {
@@ -283,11 +313,68 @@ export function MonadAuthorStats() {
       return "We ran into a problem fetching the feed";
     }
 
-    return hasResults ? "Mindshare summary for the Monad community" : "No matching casts found";
-  }, [hasResults, loadingState.error, loadingState.isLoading]);
+    if (!hasResults) {
+      return "No matching casts found";
+    }
+
+    if (searchTerm.trim().length > 0 && !hasFilteredResults) {
+      return "No authors match your search";
+    }
+
+    return "Mindshare summary for the Monad community";
+  }, [hasResults, hasFilteredResults, loadingState.error, loadingState.isLoading, searchTerm]);
 
   const handleRetry = () => {
     void fetchCasts();
+  };
+
+  useEffect(() => {
+    if (totalPages === 0) {
+      setCurrentPage(0);
+      return;
+    }
+
+    const lastPageIndex = totalPages - 1;
+
+    if (currentPage > lastPageIndex) {
+      setCurrentPage(lastPageIndex);
+    }
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [searchTerm]);
+
+  const paginatedStats = useMemo(() => {
+    if (filteredMindshareStats.length === 0) {
+      return [];
+    }
+
+    const start = currentPage * PAGE_SIZE;
+    return filteredMindshareStats.slice(start, start + PAGE_SIZE);
+  }, [currentPage, filteredMindshareStats]);
+
+  const canGoPrev = currentPage > 0;
+  const canGoNext = totalPages > 0 && currentPage < totalPages - 1;
+
+  const handlePrevPage = () => {
+    if (!canGoPrev) {
+      return;
+    }
+
+    setCurrentPage((previous) => Math.max(previous - 1, 0));
+  };
+
+  const handleNextPage = () => {
+    if (!canGoNext) {
+      return;
+    }
+
+    setCurrentPage((previous) => Math.min(previous + 1, Math.max(totalPages - 1, 0)));
+  };
+
+  const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
   };
 
   const handleAuthorClick = (fid: number) => {
@@ -359,6 +446,8 @@ export function MonadAuthorStats() {
         setCustomAmountInput("");
         setCustomAmountError(null);
         setSendError(null);
+        setShowConfirmationModal(false);
+        setTxHash(undefined);
       }
     },
     [selectedUser, selectedUsers],
@@ -384,6 +473,7 @@ export function MonadAuthorStats() {
       try {
         setSendError(null);
         setCustomAmountError(null);
+        setShowConfirmationModal(false);
         setTxHash(undefined);
         const perRecipient = parseEther(amountMon);
 
@@ -408,6 +498,7 @@ export function MonadAuthorStats() {
         });
 
         setTxHash(hash);
+        setShowConfirmationModal(true);
         return true;
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to send MON.";
@@ -503,6 +594,16 @@ export function MonadAuthorStats() {
                 <span>Total points</span>
                 <strong>{pointsFormatter.format(totalPoints)}</strong>
               </div>
+              <div className="search-control">
+                <input
+                  id="monad-author-search"
+                  type="search"
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  placeholder="Search authors by username, name, or FID"
+                  aria-label="Search authors by username, name, or FID"
+                />
+              </div>
               <button type="button" onClick={handleRetry} disabled={loadingState.isLoading}>
                 Refresh
               </button>
@@ -521,26 +622,49 @@ export function MonadAuthorStats() {
                 </tr>
               </thead>
               <tbody>
-                {mindshareStats.map((author, index) => (
-                  <tr key={author.fid}>
-                    <td>{index + 1}</td>
-                    <td className="author">
-                      {author.pfpUrl ? <img alt="Profile avatar" src={author.pfpUrl} /> : null}
-                      <button type="button" className="author-button" onClick={() => handleAuthorClick(author.fid)}>
-                        <strong>{author.displayName || author.username || `FID ${author.fid}`}</strong>
-                        {author.username ? <span>@{author.username}</span> : null}
-                      </button>
+                {paginatedStats.length > 0 ? (
+                  paginatedStats.map((author) => (
+                    <tr key={author.fid}>
+                      <td>{author.rank}</td>
+                      <td className="author">
+                        {author.pfpUrl ? <img alt="Profile avatar" src={author.pfpUrl} /> : null}
+                        <button type="button" className="author-button" onClick={() => handleAuthorClick(author.fid)}>
+                          <strong>{author.displayName || author.username || `FID ${author.fid}`}</strong>
+                          {author.username ? <span>@{author.username}</span> : null}
+                        </button>
+                      </td>
+                      <td>{author.totalCasts}</td>
+                      <td>{author.totalReactions}</td>
+                      <td>{author.totalReplies}</td>
+                      <td>{author.totalRecasts}</td>
+                      <td className="numeric">{pointsFormatter.format(author.totalPoints)}</td>
+                      <td className="numeric">{percentageFormatter.format(author.mindshare)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="empty" colSpan={8}>
+                      {searchTerm.trim().length > 0
+                        ? "Try a different handle or clear the search to see all authors."
+                        : "No matching casts found."}
                     </td>
-                    <td>{author.totalCasts}</td>
-                    <td>{author.totalReactions}</td>
-                    <td>{author.totalReplies}</td>
-                    <td>{author.totalRecasts}</td>
-                    <td className="numeric">{pointsFormatter.format(author.totalPoints)}</td>
-                    <td className="numeric">{percentageFormatter.format(author.mindshare)}</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
+            {totalPages > 1 ? (
+              <div className="pagination">
+                <button type="button" onClick={handlePrevPage} disabled={!canGoPrev}>
+                  Previous
+                </button>
+                <span>
+                  Page {currentPage + 1} of {totalPages}
+                </span>
+                <button type="button" onClick={handleNextPage} disabled={!canGoNext}>
+                  Next
+                </button>
+              </div>
+            ) : null}
             <div className="profile-panel">
               {profileState.isLoading ? (
                 <p>Loading Neynar profile for FID {profileState.fid}...</p>
@@ -582,6 +706,26 @@ export function MonadAuthorStats() {
           </>
         ) : null}
       </section>
+
+      {showConfirmationModal && txHash ? (
+        <dialog className="tip-confirmation-modal" open>
+          <div className="tip-confirmation-modal__content" role="document">
+            <h2>Tip transaction confirmed</h2>
+            <p>Your MON batch tip was successfully sent.</p>
+            <a
+              className="tip-confirmation-modal__link"
+              href={`https://testnet.monadexplorer.com/tx/${txHash}`}
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              View on Monad Explorer
+            </a>
+            <button type="button" onClick={() => setShowConfirmationModal(false)}>
+              Close
+            </button>
+          </div>
+        </dialog>
+      ) : null}
 
       {selectedUsers.length > 0 ? (
         <div className="selection-drawer" aria-live="polite">
