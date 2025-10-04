@@ -27,6 +27,10 @@ export interface NeynarUser {
   power_badge: boolean;
   custody_address?: string;
   score?: number;
+  verified_addresses?: {
+    eth_addresses?: string[];
+    sol_addresses?: string[];
+  };
 }
 
 interface NeynarBulkUserResponse {

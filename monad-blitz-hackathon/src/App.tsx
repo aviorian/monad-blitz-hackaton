@@ -1,6 +1,6 @@
 import { sdk } from "@farcaster/miniapp-sdk";
 import { useEffect } from "react";
-import { useAccount, useConnect, useSignMessage, useSwitchChain } from "wagmi";
+import { useAccount, useConnect, useSwitchChain } from "wagmi";
 import { monadTestnet } from "wagmi/chains";
 import { MonadAuthorStats } from "./components/MonadAuthorStats";
 
@@ -13,8 +13,8 @@ function App() {
     <main className="app">
       <header className="app-header">
         <div className="app-meta">
-          <h1>Monad Farcaster Mini App</h1>
-          <p>Track the latest Monad-focused Farcaster activity in a single dashboard.</p>
+          <h1>Monad Rank</h1>
+          <p>Measure Monad ecosystem mindshare on Farcaster at a glance with Monad Rank.</p>
         </div>
         <ConnectMenu />
       </header>
@@ -65,7 +65,7 @@ function ConnectMenu() {
             <p className="network-warning">Switch to Monad Testnet in your wallet.</p>
           )
         ) : (
-          <SignButton />
+            <p className="network-ready">You're ready to explore Monad Rank insights.</p>
         )}
       </div>
     );
@@ -75,25 +75,6 @@ function ConnectMenu() {
     <button type="button" className="connect-button" onClick={handleConnect} disabled={!primaryConnector}>
       {primaryConnector ? `Connect with ${primaryConnector.name}` : "No available connector"}
     </button>
-  );
-}
-
-function SignButton() {
-  const { signMessage, isPending, data, error } = useSignMessage();
-
-  return (
-    <div className="sign-block">
-      <button type="button" onClick={() => signMessage({ message: "hello world" })} disabled={isPending}>
-        {isPending ? "Signing..." : "Sign message"}
-      </button>
-      {data ? (
-        <div className="signature">
-          <span className="label">Signature</span>
-          <code>{data}</code>
-        </div>
-      ) : null}
-      {error ? <div className="error">{error.message}</div> : null}
-    </div>
   );
 }
 

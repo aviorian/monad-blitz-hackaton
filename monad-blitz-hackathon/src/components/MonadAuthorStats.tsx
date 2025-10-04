@@ -122,7 +122,7 @@ export function MonadAuthorStats() {
   const [warning, setWarning] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<NeynarUser | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<NeynarUser[]>([]);
-  const [selectedCustodyAddresses, setSelectedCustodyAddresses] = useState<string[]>([]);
+  const [selectedPrimaryAddresses, setSelectedPrimaryAddresses] = useState<string[]>([]);
   const [profileState, setProfileState] = useState<ProfileState>({ isLoading: false });
   const [searchTerm, setSearchTerm] = useState("");
   const [isCustomAmountOpen, setIsCustomAmountOpen] = useState(false);
@@ -143,14 +143,14 @@ export function MonadAuthorStats() {
   });
 
   const isSending = isWritePending || isConfirming;
-  const hasRecipients = selectedCustodyAddresses.length > 0;
+  const hasRecipients = selectedPrimaryAddresses.length > 0;
   const isWrongNetwork = Boolean(chainId) && chainId !== monadTestnet.id;
   const sendButtonsDisabled = isSending || !hasRecipients || !isConnected || isWrongNetwork;
 
   const formatHash = useCallback((hash: `0x${string}`) => `${hash.slice(0, 6)}…${hash.slice(-4)}`, []);
-  const formatCustodyAddress = useCallback((value?: string | null) => {
+  const formatPrimaryAddress = useCallback((value?: string | null) => {
     if (!value) {
-      return "Custody address unavailable";
+      return "Primary address unavailable";
     }
 
     if (value.length <= 10) {
@@ -161,6 +161,8 @@ export function MonadAuthorStats() {
     const suffix = value.slice(-4);
     return `${prefix}…${suffix}`;
   }, []);
+
+  const resolvePrimaryAddress = (user?: NeynarUser | null) => user?.verified_addresses?.eth_addresses?.[0] ?? null;
 
   const pointsFormatter = useMemo(() => {
     return new Intl.NumberFormat("en-US", {
@@ -378,7 +380,7 @@ export function MonadAuthorStats() {
   };
 
   const handleAuthorClick = (fid: number) => {
-    void miniappSdk.actions.viewProfile({ fid });
+    //void miniappSdk.actions.viewProfile({ fid });
 
     setProfileState({ isLoading: true, fid });
 
@@ -391,7 +393,7 @@ export function MonadAuthorStats() {
           setProfileState({ isLoading: false, fid, error: "No profile data returned." });
           return;
         }
-
+        console.log("user", user);
         setSelectedUser(user);
         setProfileState({ isLoading: false, fid });
 
@@ -403,15 +405,17 @@ export function MonadAuthorStats() {
           return [...previous, user];
         });
 
-        const custodyAddress = user.custody_address;
+        const primaryAddress = resolvePrimaryAddress(user);
 
-        if (custodyAddress) {
-          setSelectedCustodyAddresses((previous) => {
-            if (previous.includes(custodyAddress)) {
+        if (primaryAddress) {
+          setSelectedPrimaryAddresses((previous) => {
+            const normalized = primaryAddress.toLowerCase();
+
+            if (previous.some((address) => address.toLowerCase() === normalized)) {
               return previous;
             }
 
-            return [...previous, custodyAddress];
+            return [...previous, primaryAddress];
           });
         }
       })
@@ -428,12 +432,14 @@ export function MonadAuthorStats() {
 
       setSelectedUsers(remainingUsers);
 
-      if (removedUser?.custody_address) {
-        const target = removedUser.custody_address.toLowerCase();
-        const stillUsed = remainingUsers.some((user) => user.custody_address?.toLowerCase() === target);
+      const removedPrimaryAddress = resolvePrimaryAddress(removedUser);
+
+      if (removedPrimaryAddress) {
+        const target = removedPrimaryAddress.toLowerCase();
+        const stillUsed = remainingUsers.some((user) => resolvePrimaryAddress(user)?.toLowerCase() === target);
 
         if (!stillUsed) {
-          setSelectedCustodyAddresses((addresses) => addresses.filter((address) => address.toLowerCase() !== target));
+          setSelectedPrimaryAddresses((addresses) => addresses.filter((address) => address.toLowerCase() !== target));
         }
       }
 
@@ -455,8 +461,8 @@ export function MonadAuthorStats() {
 
   const handleSendMon = useCallback(
     async (amountMon: string): Promise<boolean> => {
-      if (selectedCustodyAddresses.length === 0) {
-        setSendError("Select at least one author with a custody address.");
+      if (selectedPrimaryAddresses.length === 0) {
+        setSendError("Select at least one author with a verified primary address.");
         return false;
       }
 
@@ -482,7 +488,7 @@ export function MonadAuthorStats() {
           return false;
         }
 
-        const recipients = selectedCustodyAddresses.map((address) => ({
+        const recipients = selectedPrimaryAddresses.map((address) => ({
           recipient: address as Address,
           amount: perRecipient,
         }));
@@ -506,7 +512,7 @@ export function MonadAuthorStats() {
         return false;
       }
     },
-    [selectedCustodyAddresses, isConnected, chainId, writeContractAsync],
+    [selectedPrimaryAddresses, isConnected, chainId, writeContractAsync],
   );
 
   const handleCustomAmountClick = () => {
@@ -542,8 +548,8 @@ export function MonadAuthorStats() {
       return;
     }
 
-    if (selectedCustodyAddresses.length === 0) {
-      setCustomAmountError("No custody addresses selected for MON transfer.");
+    if (selectedPrimaryAddresses.length === 0) {
+      setCustomAmountError("No verified primary addresses selected for MON transfer.");
       return;
     }
 
@@ -567,7 +573,8 @@ export function MonadAuthorStats() {
     <>
       <section className="monad-author-stats">
         <header>
-          <h1>Monad Engagement Dashboard</h1>
+          <h1>Monad Rank Analytics</h1>
+          <p className="tagline">Explore the Monad ecosystem's Farcaster mindshare with Monad Rank.</p>
           <p>{subtitle}</p>
           {lastUpdated && !loadingState.isLoading ? (
             <p className="timestamp">Last updated: {lastUpdated.toLocaleTimeString()}</p>
@@ -738,7 +745,9 @@ export function MonadAuthorStats() {
               {selectedUsers.map((user) => (
                 <li key={user.fid}>
                   <span className="selection-drawer__name">{user.display_name || user.username}</span>
-                  <span className="selection-drawer__address">{formatCustodyAddress(user.custody_address)}</span>
+                  <span className="selection-drawer__address">
+                    {formatPrimaryAddress(resolvePrimaryAddress(user))}
+                  </span>
                   <button
                     type="button"
                     className="selection-drawer__remove"
@@ -800,7 +809,7 @@ export function MonadAuthorStats() {
           ) : null}
           {sendError ? <p className="selection-drawer__error">{sendError}</p> : null}
           {!hasRecipients ? (
-            <p className="selection-drawer__status">Selected profiles do not expose custody addresses.</p>
+            <p className="selection-drawer__status">Selected profiles do not expose verified primary addresses.</p>
           ) : null}
           {isWrongNetwork ? <p className="selection-drawer__status">Switch to Monad Testnet to send MON.</p> : null}
           {!isConnected ? <p className="selection-drawer__status">Connect your wallet to send MON.</p> : null}
