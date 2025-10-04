@@ -3,11 +3,6 @@
 </p>
 
 <h1 align="center">Monad Rank 🪩</h1>
-
-<p align="center">
-  <b>Monad Rank x Işık Blockchain</b><br/>
-  <i>"Katkıyı on-chain hale getiriyoruz."</i>
-</p>"center">
   <b>On-chain SocialFi Analytics for Monad Community</b><br/>
   Monad topluluğundaki katkıyı ölçen, sıralayan ve on-chain olarak ödüllendiren Farcaster mini-app.
 </p>
