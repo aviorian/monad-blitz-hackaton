@@ -133,7 +133,7 @@ export function MonadAuthorStats() {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
 
-  const { isConnected, chainId } = useAccount();
+  const { isConnected, chainId, address: accountAddress } = useAccount();
   const { writeContractAsync, isPending: isWritePending } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash: txHash ?? undefined,
@@ -466,7 +466,7 @@ export function MonadAuthorStats() {
         return false;
       }
 
-      if (!isConnected) {
+      if (!isConnected || !accountAddress) {
         setSendError("Connect a wallet to send MON.");
         return false;
       }
@@ -496,11 +496,13 @@ export function MonadAuthorStats() {
         const totalValue = perRecipient * BigInt(recipients.length);
 
         const hash = await writeContractAsync({
+          chain: monadTestnet,
           address: COMMUNITY_TIP_RAIL_ADDRESS,
           abi: COMMUNITY_TIP_RAIL_ABI,
           functionName: "tipBatchNative",
           args: [recipients],
           value: totalValue,
+          account: accountAddress as Address,
         });
 
         setTxHash(hash);
