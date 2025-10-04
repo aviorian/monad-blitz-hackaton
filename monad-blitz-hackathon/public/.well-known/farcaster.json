@@ -11,7 +11,7 @@
     "splashImageUrl": "https://monad-blitz-hackaton.vercel.app/public/assets/monad-splash.png",
     "splashBackgroundColor": "#000000",
     "homeUrl": "https://monad-blitz-hackaton.vercel.app",
-    "webhookUrl": "",
+    "webhookUrl": " ",
     "subtitle": "Discover Monad mindshare",
     "description": "Explore Monad's Farcaster mindshare. Monad Rank tracks influential authors and community engagement, providing a real-time leaderboard of the ecosystem's top voices.",
     "screenshotUrls": [
