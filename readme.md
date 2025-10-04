@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="monadrank.jpg" alt="Monad Rank Logo" width="120"/>
+  <img src="monadrank.jpg" alt="Monad Rank Logo" width="800"/>
 </p>
 
 <h1 align="center">Monad Rank 🪩</h1>
@@ -125,13 +125,14 @@ npx hardhat run scripts/deploy.js --network monad-testnet
 | **Mert Ali Dalkır** |
 
 ---
-##🧡 Teşekkür Ederiz!
-<p align="center">
-  <img src="assets/tesekkur.png" alt="Teşekkür Ederiz" width="700"/>
-  <br/><br/>
-  <b>Monad Rank x Işık Blockchain</b><br/>
-  <i>“Katkıyı on-chain hale getiriyoruz.”</i>
-</p>
+##Kontrat Adresleri
+
+  Leaderboard Registry: "0xF3472239913bA5F6aE5258478f31D92c0c0bc05D",
+  Monad Community Tip Rail: "0x3E272334B79cCCD704e470dd86beCf624AbB2F01"
+
+  Sunum Linki: https://www.canva.com/design/DAG00wpe1F0/fayW7M7hBM0PNRrVHQdOsw/edit?utm_content=DAG00wpe1F0&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton 
 ```
 
-Sunum Linki: https://www.canva.com/design/DAG00wpe1F0/fayW7M7hBM0PNRrVHQdOsw/edit?utm_content=DAG00wpe1F0&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton 
+
+
+
